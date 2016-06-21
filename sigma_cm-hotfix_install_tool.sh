@@ -75,7 +75,7 @@ function check_process(){
 function install_patch(){
   echo -n "input patch date : "
   read date
-  word_num=`echo ${date} | wc -l`
+  word_num=`echo ${#date}`
   if [ ${word_num} -ne 6 ]; then
     echo "invalid patch date"
     exit 1
