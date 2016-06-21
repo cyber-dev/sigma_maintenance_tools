@@ -63,31 +63,13 @@ startProcess(){
 }
 
 
-checkStop(){
-  for process in ${webmail_process}
-  do
-    process_num=`ps -ef | grep ${process} | egrep -v 'mailerd2|smtpd2|grep' | wc -l`
-
-    if [ ${process_num} != 0 ]; then
-      killall ${process}
-      wait
-      process_num=`ps -ef | grep ${process} | egrep -v 'mailerd2|smtpd2|grep' | wc -l`
-    fi
-
-    echo -e ${process_num} \\t ${process}
-  done
-  echo -e `ps -ef | grep mailerd2 | grep -v grep | wc -l` \\t mailerd2
-  echo -e `ps -ef | grep smtpd2 | grep -v grep | wc -l` \\t smtpd2
-  menu
-}
-
-
-checkStart(){
+checkProcess(){
   for process in ${webmail_process}
   do
     process_num=`ps -ef | grep ${process} | egrep -v 'mailerd2|smtpd2|grep' | wc -l`
     echo -e ${process_num} \\t ${process}
   done
+
   echo -e `ps -ef | grep mailerd2 | grep -v grep | wc -l` \\t mailerd2
   echo -e `ps -ef | grep smtpd2 | grep -v grep | wc -l` \\t smtpd2
   menu
@@ -116,30 +98,28 @@ installPatch(){
 
 
 menu(){
-echo "=========================================="
-echo " ${HOST} CM Hotfix Install tool MENU      "
-echo "=========================================="
-echo " 1. make backup                           "
-echo " 2. stop webmail process                  "
-echo " 3. check webmail process                 "
-echo " 4. install patch                         "
-echo " 5. start webmail process                 "
-echo " 6. check webmail process                 "
-echo " q. quit                                  "
-echo "------------------------------------------"
-echo -n "input number : "
-read INPUT
+  echo "=========================================="
+  echo " ${HOST} CM Hotfix Install tool MENU      "
+  echo "=========================================="
+  echo " 1. make backup                           "
+  echo " 2. stop webmail process                  "
+  echo " 3. check webmail process                 "
+  echo " 4. install patch                         "
+  echo " 5. start webmail process                 "
+  echo " q. quit                                  "
+  echo "------------------------------------------"
+  echo -n "input number : "
+  read INPUT
 
-case ${INPUT} in
-  1) makeBackup           ;;
-  2) stopProcess          ;;
-  3) checkStop            ;;
-  4) installPatch         ;;
-  5) startProcess         ;;
-  6) checkStart           ;;
-  q) exit 0               ;;
-  *) invalid number       ;;
-esac
+  case ${INPUT} in
+    1) makeBackup           ;;
+    2) stopProcess          ;;
+    3) checkProcess         ;;
+    4) installPatch         ;;
+    5) startProcess         ;;
+    q) exit 0               ;;
+    *) invalid number       ;;
+  esac
 }
 
 
