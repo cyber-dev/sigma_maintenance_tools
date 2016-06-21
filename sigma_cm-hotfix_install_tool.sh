@@ -86,7 +86,7 @@ function install_patch(){
   cd ${HOME_DIR}
   sudo -u webmail tar zxvf ${HOME_DIR}/${CM_PATCH}_${date}.tgz
   wait
-  cd ${HOME_DIR}/${CM_PATCH}_${date}.tgz
+  cd ${HOME_DIR}/${CM_PATCH}_${date}
   ./patch_installer.pl
   wait
   menu
@@ -99,6 +99,7 @@ function sigma_customize(){
   sudo -u webmail /webmail/tools/restartshm
   sudo -u webmail /webmail/tools/reloadini
   ldconfig
+  menu
 }
 
 
