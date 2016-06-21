@@ -15,19 +15,19 @@ readonly BACKUP_FILE="${WORK_DIR}/backup.tgz"
 readonly CM_PATCH="hotfix_sigma_v6sp4c004"
 readonly M2KCTRL="/webmail/tools/m2kctrl"
 readonly HOSTNAME=`uname -n | awk -F. '{print $1}'`
-readonly WEBMAIL_PROC=`/webmail/tools/M2KCTRL -s all -c status | awk '{print $1}' | egrep -v "cav_srv|m2kidxd"`
+readonly WEBMAIL_PROC=`${M2KCTRL} -s all -c status | awk '{print $1}' | egrep -v "cav_srv|m2kidxd"`
 
 
 function make_backup(){
   echo -n "patch num : "
-  read local _num
-  for i in `seq 1 ${_num}`
+  read num
+  for i in `seq 1 ${num}`
   do
     echo -n "input patch date : "
-    read local _date
-    tar ztf ${WORK_DIR}/${CM_PATCH}_${_date}.tgz | egrep -v "/$|m2kpatch" | sed "s/${CM_PATCH}_${_date}/\/webmail/g" >> ${TMP_LIST}
+    read date
+    tar ztf ${WORK_DIR}/${CM_PATCH}_${date}.tgz | egrep -v "/$|m2kpatch" | sed "s/${CM_PATCH}_${date}/\/webmail/g" >> ${TMP_LIST}
     wait
-    echo "make backup list ${CM_PATCH}_${_date}"
+    echo "make backup list ${CM_PATCH}_${date}"
     echo
   done
   cat ${TMP_LIST} | sort | uniq > ${BACKUP_LIST}
@@ -61,8 +61,8 @@ function start_process(){
 function check_process(){
   for process in ${WEBMAIL_PROC}
   do
-    local _process_num=`ps -ef | grep ${process} | egrep -v 'mailerd2|smtpd2|grep' | wc -l`
-    echo -e ${_process_num} \\t ${process}
+    local _processnum=`ps -ef | grep ${process} | egrep -v 'mailerd2|smtpd2|grep' | wc -l`
+    echo -e ${_processnum} \\t ${process}
   done
 
   echo -e `ps -ef | grep mailerd2 | grep -v grep | wc -l` \\t mailerd2
@@ -73,19 +73,19 @@ function check_process(){
 
 function install_patch(){
   echo -n "input patch date : "
-  read local _date
-  word_num=`echo ${_date} | wc -l`
-  if [ ${word_num} -ne 6 ]; then
+  read date
+  wordnum=`echo ${date} | wc -l`
+  if [ ${wordnum} -ne 6 ]; then
     echo "invalid patch date"
     exit 1
   fi
 
-  cp -p ${WORK_DIR}/${CM_PATCH}_${_date}.tgz ${HOME_DIR}/${CM_PATCH}_${_date}.tgz
+  cp -p ${WORK_DIR}/${CM_PATCH}_${date}.tgz ${HOME_DIR}/${CM_PATCH}_${date}.tgz
   wait
   cd ${HOME_DIR}
-  sudo -u webmail tar zxvf ${HOME_DIR}/${CM_PATCH}_${_date}.tgz
+  sudo -u webmail tar zxvf ${HOME_DIR}/${CM_PATCH}_${date}.tgz
   wait
-  cd ${HOME_DIR}/${CM_PATCH}_${_date}.tgz
+  cd ${HOME_DIR}/${CM_PATCH}_${date}.tgz
   ./patch_installer.pl
   wait
   menu
