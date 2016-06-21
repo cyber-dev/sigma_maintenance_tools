@@ -8,7 +8,8 @@
 
 
 readonly HOME_DIR="/home/webmail"
-readonly WORK_DIR="/mnt/storage/workdir/module/patch/201606xx_add"
+readonly WORK_DIR="/mnt/storage/workdir/module/patch/20160724_add"
+readonly CUSTOMIZE_FILE="${WORK_DIR}/customize_file.tgz"
 readonly TMP_LIST=`mktemp`
 readonly BACKUP_LIST="${WORK_DIR}/backup.list"
 readonly BACKUP_FILE="${WORK_DIR}/backup.tgz"
@@ -74,8 +75,8 @@ function check_process(){
 function install_patch(){
   echo -n "input patch date : "
   read date
-  wordnum=`echo ${date} | wc -l`
-  if [ ${wordnum} -ne 6 ]; then
+  word_num=`echo ${date} | wc -l`
+  if [ ${word_num} -ne 6 ]; then
     echo "invalid patch date"
     exit 1
   fi
@@ -92,6 +93,15 @@ function install_patch(){
 }
 
 
+function sigma_customize(){
+  cd /
+  sudo -u webmail tar zxvf ${CUSTOMIZE_FILE}
+  sudo -u webmail /webmail/tools/restartshm
+  sudo -u webmail /webmail/tools/reloadini
+  ldconfig
+}
+
+
 function menu(){
   echo "=========================================="
   echo " ${HOSTNAME} CM Hotfix Install tool MENU  "
@@ -100,7 +110,8 @@ function menu(){
   echo " 2. stop webmail process                  "
   echo " 3. check webmail process                 "
   echo " 4. install patch                         "
-  echo " 5. start webmail process                 "
+  echo " 5. sigma customize                       "
+  echo " 6. start webmail process                 "
   echo " q. quit                                  "
   echo "------------------------------------------"
   echo -n "input number : "
@@ -111,7 +122,8 @@ function menu(){
     2) stop_process          ;;
     3) check_process         ;;
     4) install_patch         ;;
-    5) start_process         ;;
+    5) sigma_customize       ;;
+    6) start_process         ;;
     q) exit 0                ;;
     *) invalid number        ;;
   esac
