@@ -7,44 +7,39 @@
 ###################################################
 
 
-home_dir="/home/webmail"
-work_dir="/mnt/storage/workdir/module/patch/201606xx_add"
-tmp_list=`mktemp`
-backup_list="${work_dir}/backup.list"
-backup_file="${work_dir}/backup.tgz"
-cm_patch="hotfix_sigma_v6sp4c004"
-m2kctrl="/webmail/tools/m2kctrl"
-hostname=`uname -n | awk -F. '{print $1}'`
-webmail_process=`/webmail/tools/m2kctrl -s all -c status | awk '{print $1}' | egrep -v "cav_srv|m2kidxd"`
-
-if [ $$ -ne $(pgrep -fo "$0") ]; then
-  echo "You can't run this script."
-  exit 1
-fi
+readonly HOME_DIR="/home/webmail"
+readonly WORK_DIR="/mnt/storage/workdir/module/patch/201606xx_add"
+readonly TMP_LIST=`mktemp`
+readonly BACKUP_LIST="${WORK_DIR}/backup.list"
+readonly BACKUP_FILE="${WORK_DIR}/backup.tgz"
+readonly CM_PATCH="hotfix_sigma_v6sp4c004"
+readonly M2KCTRL="/webmail/tools/m2kctrl"
+readonly HOSTNAME=`uname -n | awk -F. '{print $1}'`
+readonly WEBMAIL_PROC=`/webmail/tools/M2KCTRL -s all -c status | awk '{print $1}' | egrep -v "cav_srv|m2kidxd"`
 
 
-makeBackup(){
+function make_backup(){
   echo -n "patch num : "
-  read num
-  for i in `seq 1 ${num}`
+  read local _num
+  for i in `seq 1 ${_num}`
   do
     echo -n "input patch date : "
-    read date
-    tar ztf ${work_dir}/${cm_patch}_${date}.tgz | egrep -v "/$|m2kpatch" | sed "s/${cm_patch}_${date}/\/webmail/g" >> ${tmp_list}
+    read local _date
+    tar ztf ${WORK_DIR}/${CM_PATCH}_${_date}.tgz | egrep -v "/$|m2kpatch" | sed "s/${CM_PATCH}_${_date}/\/webmail/g" >> ${TMP_LIST}
     wait
-    echo "make backup list ${cm_patch}_${date}"
+    echo "make backup list ${CM_PATCH}_${_date}"
     echo
   done
-  cat ${tmp_list} | sort | uniq > ${backup_list}
-  tar zcf ${backup_file} -T ${backup_list}
+  cat ${TMP_LIST} | sort | uniq > ${BACKUP_LIST}
+  tar zcf ${BACKUP_FILE} -T ${BACKUP_LIST}
   wait
-  tar zftv ${backup_file}
+  tar zftv ${BACKUP_FILE}
   menu
 }
 
 
-stopProcess(){
-  sudo -u webmail ${m2kctrl} -s all -c stop
+function stop_process(){
+  sudo -u webmail ${M2KCTRL} -s all -c stop
   wait
   killall mailerd2 smtpd2
   wait
@@ -52,8 +47,8 @@ stopProcess(){
 }
 
 
-startProcess(){
-  sudo -u webmail ${m2kctrl} -s all -c start
+function start_process(){
+  sudo -u webmail ${M2KCTRL} -s all -c start
   wait
   /webmail/mqueue2/bin/mailerd2 /webmail/mqueue2/conf/mailerd2.conf
   wait
@@ -63,11 +58,11 @@ startProcess(){
 }
 
 
-checkProcess(){
-  for process in ${webmail_process}
+function check_process(){
+  for process in ${WEBMAIL_PROC}
   do
-    process_num=`ps -ef | grep ${process} | egrep -v 'mailerd2|smtpd2|grep' | wc -l`
-    echo -e ${process_num} \\t ${process}
+    local _process_num=`ps -ef | grep ${process} | egrep -v 'mailerd2|smtpd2|grep' | wc -l`
+    echo -e ${_process_num} \\t ${process}
   done
 
   echo -e `ps -ef | grep mailerd2 | grep -v grep | wc -l` \\t mailerd2
@@ -76,30 +71,30 @@ checkProcess(){
 }
 
 
-installPatch(){
+function install_patch(){
   echo -n "input patch date : "
-  read date
-  word_num=`echo ${date} | wc -l`
+  read local _date
+  word_num=`echo ${_date} | wc -l`
   if [ ${word_num} -ne 6 ]; then
     echo "invalid patch date"
     exit 1
   fi
 
-  cp -p ${work_dir}/${cm_patch}_${date}.tgz ${home_dir}/${cm_patch}_${date}.tgz
+  cp -p ${WORK_DIR}/${CM_PATCH}_${_date}.tgz ${HOME_DIR}/${CM_PATCH}_${_date}.tgz
   wait
-  cd ${home_dir}
-  sudo -u webmail tar zxvf ${home_dir}/${cm_patch}_${date}.tgz
+  cd ${HOME_DIR}
+  sudo -u webmail tar zxvf ${HOME_DIR}/${CM_PATCH}_${_date}.tgz
   wait
-  cd ${home_dir}/${cm_patch}_${date}.tgz
+  cd ${HOME_DIR}/${CM_PATCH}_${_date}.tgz
   ./patch_installer.pl
   wait
   menu
 }
 
 
-menu(){
+function menu(){
   echo "=========================================="
-  echo " ${HOST} CM Hotfix Install tool MENU      "
+  echo " ${HOSTNAME} CM Hotfix Install tool MENU  "
   echo "=========================================="
   echo " 1. make backup                           "
   echo " 2. stop webmail process                  "
@@ -112,13 +107,13 @@ menu(){
   read INPUT
 
   case ${INPUT} in
-    1) makeBackup           ;;
-    2) stopProcess          ;;
-    3) checkProcess         ;;
-    4) installPatch         ;;
-    5) startProcess         ;;
-    q) exit 0               ;;
-    *) invalid number       ;;
+    1) make_backup           ;;
+    2) stop_process          ;;
+    3) check_process         ;;
+    4) install_patch         ;;
+    5) start_process         ;;
+    q) exit 0                ;;
+    *) invalid number        ;;
   esac
 }
 
