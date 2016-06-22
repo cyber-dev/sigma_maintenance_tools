@@ -13,7 +13,9 @@ readonly CUSTOMIZE_FILE="${WORK_DIR}/customize_file.tgz"
 readonly TMP_LIST=`mktemp`
 readonly BACKUP_LIST="${WORK_DIR}/backup.list"
 readonly BACKUP_FILE="${WORK_DIR}/backup.tgz"
-readonly CM_PATCH="hotfix_sigma_v6sp4c004"
+readonly BACKUP_MD5SUM="${WORK_DIR}/backup.md5sum"
+readonly AFTER_MD5SUM="${WORK_DIR}/after.md5sum"
+readonly CM_HOTFIX="hotfix_sigma_v6sp4c004"
 readonly M2KCTRL="/webmail/tools/m2kctrl"
 readonly HOSTNAME=`uname -n | awk -F. '{print $1}'`
 readonly WEBMAIL_PROC=`${M2KCTRL} -s all -c status | awk '{print $1}' | egrep -v "cav_srv|m2kidxd"`
@@ -22,18 +24,32 @@ readonly WEBMAIL_PROC=`${M2KCTRL} -s all -c status | awk '{print $1}' | egrep -v
 function make_backup(){
   echo -n "patch num : "
   read num
+
   for i in `seq 1 ${num}`
   do
     echo -n "input patch date : "
     read date
-    tar ztf ${WORK_DIR}/${CM_PATCH}_${date}.tgz | egrep -v "/$|m2kpatch" | sed "s/${CM_PATCH}_${date}/\/webmail/g" >> ${TMP_LIST}
+    word_num=`echo ${#date}`
+    if [ ${word_num} -ne 6 ]; then
+      echo "invalid patch date"
+      exit 1
+    fi
+    tar ztf ${WORK_DIR}/${CM_HOTFIX}_${date}.tgz | egrep -v "/$|patch.info|installer|m2kpatch" | sed "s/${CM_HOTFIX}_${date}/\/webmail/g" >> ${TMP_LIST}
     wait
-    echo "make backup list ${CM_PATCH}_${date}"
+    echo "make backup list ${CM_HOTFIX}_${date}"
     echo
   done
+
   cat ${TMP_LIST} | sort | uniq > ${BACKUP_LIST}
   tar zcf ${BACKUP_FILE} -T ${BACKUP_LIST}
   wait
+
+  for file in `cat ${BACKUP_LIST}`
+  do
+    md5sum ${file} >> ${BACKUP_MD5SUM}
+  done
+
+  cat ${BACKUP_MD5SUM}
   tar zftv ${BACKUP_FILE}
   menu
 }
@@ -73,22 +89,36 @@ function check_process(){
 
 
 function install_patch(){
-  echo -n "input patch date : "
-  read date
-  word_num=`echo ${#date}`
-  if [ ${word_num} -ne 6 ]; then
-    echo "invalid patch date"
-    exit 1
-  fi
+  echo -n "patch num : "
+  read num
 
-  cp -p ${WORK_DIR}/${CM_PATCH}_${date}.tgz ${HOME_DIR}/${CM_PATCH}_${date}.tgz
-  wait
-  cd ${HOME_DIR}
-  sudo -u webmail tar zxvf ${HOME_DIR}/${CM_PATCH}_${date}.tgz
-  wait
-  cd ${HOME_DIR}/${CM_PATCH}_${date}
-  ./patch_installer.pl
-  wait
+  for i in `seq 1 ${num}`
+  do
+    echo -n "input patch date : "
+    read date
+    word_num=`echo ${#date}`
+    if [ ${word_num} -ne 6 ]; then
+      echo "invalid patch date"
+      exit 1
+    fi
+    cp -p ${WORK_DIR}/${CM_HOTFIX}_${date}.tgz ${HOME_DIR}/${CM_HOTFIX}_${date}.tgz
+    wait
+    cd ${HOME_DIR}
+    sudo -u webmail tar zxvf ${HOME_DIR}/${CM_HOTFIX}_${date}.tgz
+    wait
+    cd ${HOME_DIR}/${CM_HOTFIX}_${date}
+    ./patch_installer.pl
+    wait
+    echo
+  done
+
+  for file in `cat ${BACKUP_LIST}`
+  do
+    md5sum ${file} >> ${AFTER_MD5SUM}
+  done
+
+  diff ${BACKUP_MD5SUM} ${AFTER_MD5SUM}
+
   menu
 }
 
@@ -96,6 +126,16 @@ function install_patch(){
 function sigma_customize(){
   cd /
   sudo -u webmail tar zxvf ${CUSTOMIZE_FILE}
+  sudo -u webmail /webmail/tools/restartshm
+  sudo -u webmail /webmail/tools/reloadini
+  ldconfig
+  menu
+}
+
+
+function switch_back(){
+  cd /
+  sudo -u webmail tar zxvf ${BACKUP_FILE}
   sudo -u webmail /webmail/tools/restartshm
   sudo -u webmail /webmail/tools/reloadini
   ldconfig
@@ -113,6 +153,7 @@ function menu(){
   echo " 4. install patch                         "
   echo " 5. sigma customize                       "
   echo " 6. start webmail process                 "
+  echo " 7. switch back                           "
   echo " q. quit                                  "
   echo "------------------------------------------"
   echo -n "input number : "
@@ -125,6 +166,7 @@ function menu(){
     4) install_patch         ;;
     5) sigma_customize       ;;
     6) start_process         ;;
+    7) switch_back           ;;
     q) exit 0                ;;
     *) invalid number        ;;
   esac
