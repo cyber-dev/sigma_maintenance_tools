@@ -54,10 +54,11 @@ function make_backup(){
 
 function stop_process(){
   # stop process
-  sudo -u webmail ${M2KCTRL} -s all -c stop
+  sudo -u webmail ${M2KCTRL} -s all -c stop > /dev/null 2>&1
   wait
-  killall mailerd2 smtpd2
+  killall mailerd2 smtpd2 > /dev/null 2>&1
   wait
+  sleep 5
 
   # check process
   check_process
@@ -67,12 +68,13 @@ function stop_process(){
 
 function start_process(){
   # start process
-  sudo -u webmail ${M2KCTRL} -s all -c start
+  sudo -u webmail ${M2KCTRL} -s all -c start > /dev/null 2>&1
   wait
-  /webmail/mqueue2/bin/mailerd2 /webmail/mqueue2/conf/mailerd2.conf
+  /webmail/mqueue2/bin/mailerd2 /webmail/mqueue2/conf/mailerd2.conf > /dev/null 2>&1
   wait
-  /webmail/mqueue2/bin/smtpd2 /webmail/mqueue2/conf/smtpd2.conf
+  /webmail/mqueue2/bin/smtpd2 /webmail/mqueue2/conf/smtpd2.conf > /dev/null 2>&1
   wait
+  sleep 5
 
   # check process
   check_process
@@ -89,39 +91,31 @@ function check_process(){
 
   echo -e `ps -ef | grep mailerd2 | grep -v grep | wc -l` \\t mailerd2
   echo -e `ps -ef | grep smtpd2 | grep -v grep | wc -l` \\t smtpd2
-  menu
 }
 
 
 function install_patch(){
-  echo -n "patch num : "
-  read num
-
-  for i in `seq 1 ${num}`
+  # install hotfix
+  for hotfix in `ls ${WORK_DIR}/${CM_HOTFIX}* | awk -F/ '{print $NF}' | sed "s/.tgz//g"`
   do
-    echo -n "input patch date : "
-    read date
-    word_num=`echo ${#date}`
-    if [ ${word_num} -ne 6 ]; then
-      echo "invalid patch date"
-      exit 1
-    fi
-    cp -p ${WORK_DIR}/${CM_HOTFIX}_${date}.tgz ${HOME_DIR}/${CM_HOTFIX}_${date}.tgz
+    cp -p ${WORK_DIR}/${hotfix}.tgz ${HOME_DIR}/${hotfix}.tgz
     wait
     cd ${HOME_DIR}
-    sudo -u webmail tar zxvf ${HOME_DIR}/${CM_HOTFIX}_${date}.tgz
+    sudo -u webmail tar zxvf ${HOME_DIR}/${hotfix}.tgz
     wait
-    cd ${HOME_DIR}/${CM_HOTFIX}_${date}
+    cd ${HOME_DIR}/${hotfix}
     ./patch_installer.pl
     wait
     echo
   done
 
+  # make after md5sum
   for file in `cat ${BACKUP_LIST}`
   do
     md5sum ${file} >> ${AFTER_MD5SUM}
   done
 
+  # diff md5sum
   diff ${BACKUP_MD5SUM} ${AFTER_MD5SUM}
 
   menu
