@@ -53,21 +53,29 @@ function make_backup(){
 
 
 function stop_process(){
+  # stop process
   sudo -u webmail ${M2KCTRL} -s all -c stop
   wait
   killall mailerd2 smtpd2
   wait
+
+  # check process
+  check_process
   menu
 }
 
 
 function start_process(){
+  # start process
   sudo -u webmail ${M2KCTRL} -s all -c start
   wait
   /webmail/mqueue2/bin/mailerd2 /webmail/mqueue2/conf/mailerd2.conf
   wait
   /webmail/mqueue2/bin/smtpd2 /webmail/mqueue2/conf/smtpd2.conf
   wait
+
+  # check process
+  check_process
   menu
 }
 
@@ -146,11 +154,10 @@ function menu(){
   echo "=========================================="
   echo " 1. make backup                           "
   echo " 2. stop webmail process                  "
-  echo " 3. check webmail process                 "
-  echo " 4. install patch                         "
-  echo " 5. sigma customize                       "
-  echo " 6. start webmail process                 "
-  echo " 7. switch back                           "
+  echo " 3. install patch                         "
+  echo " 4. sigma customize                       "
+  echo " 5. start webmail process                 "
+  echo " 6. switch back                           "
   echo " q. quit                                  "
   echo "------------------------------------------"
   echo -n "input number : "
@@ -159,11 +166,10 @@ function menu(){
   case ${INPUT} in
     1) make_backup           ;;
     2) stop_process          ;;
-    3) check_process         ;;
-    4) install_patch         ;;
-    5) sigma_customize       ;;
-    6) start_process         ;;
-    7) switch_back           ;;
+    3) install_patch         ;;
+    4) sigma_customize       ;;
+    5) start_process         ;;
+    6) switch_back           ;;
     q) exit 0                ;;
     *) invalid number        ;;
   esac
