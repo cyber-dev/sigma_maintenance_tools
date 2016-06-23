@@ -8,7 +8,7 @@
 
 
 readonly HOME_DIR="/home/webmail"
-readonly WORK_DIR="/mnt/storage/workdir/module/patch/20160724_add"
+readonly WORK_DIR="/mnt/storage/workdir/module/patch/20160723_add"
 readonly CUSTOMIZE_FILE="${WORK_DIR}/customize_file.tgz"
 readonly TMP_LIST=`mktemp`
 readonly BACKUP_LIST="${WORK_DIR}/backup.list"
@@ -22,35 +22,32 @@ readonly WEBMAIL_PROC=`${M2KCTRL} -s all -c status | awk '{print $1}' | egrep -v
 
 
 function make_backup(){
-  echo -n "patch num : "
-  read num
-
-  for i in `seq 1 ${num}`
+  # make backup list
+  for hotfix in `ls ${WORK_DIR}/${CM_HOTFIX}*`
   do
-    echo -n "input patch date : "
-    read date
-    word_num=`echo ${#date}`
-    if [ ${word_num} -ne 6 ]; then
-      echo "invalid patch date"
-      exit 1
-    fi
-    tar ztf ${WORK_DIR}/${CM_HOTFIX}_${date}.tgz | egrep -v "/$|patch.info|installer|m2kpatch" | sed "s/${CM_HOTFIX}_${date}/\/webmail/g" >> ${TMP_LIST}
+    local _hotfix=`ls ${hotfix} | awk -F/ '{print $NF}' | awk -F. '{print $1}'`
+    tar ztf ${hotfix} | egrep -v "/$|patch.info|installer|m2kpatch" | sed "s/${_hotfix}/\/webmail/g" >> ${TMP_LIST}
     wait
-    echo "make backup list ${CM_HOTFIX}_${date}"
-    echo
   done
 
+  # make backup
   cat ${TMP_LIST} | sort | uniq > ${BACKUP_LIST}
-  tar zcf ${BACKUP_FILE} -T ${BACKUP_LIST}
+  tar zcf ${BACKUP_FILE} -T ${BACKUP_LIST} > /dev/null 2>&1
   wait
 
+  # make backup file md5sum list
   for file in `cat ${BACKUP_LIST}`
   do
     md5sum ${file} >> ${BACKUP_MD5SUM}
   done
 
-  cat ${BACKUP_MD5SUM}
-  tar zftv ${BACKUP_FILE}
+  # check backup
+  echo
+  echo "########## BACKUP FILE ##########"
+  ls -al ${BACKUP_LIST} ${BACKUP_FILE} ${BACKUP_MD5SUM}
+  echo "#################################"
+  echo
+
   menu
 }
 
