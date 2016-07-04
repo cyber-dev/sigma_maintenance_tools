@@ -98,6 +98,15 @@ function install_patch(){
   # install hotfix
   for hotfix in `ls ${WORK_DIR}/${CM_HOTFIX}* | awk -F/ '{print $NF}' | sed "s/.tgz//g"`
   do
+    echo
+    echo -n "Do you apply the ${hotfix} ? (y/n) :"
+    read answer
+    if [ ${answer} == "y" ]; then
+      continue
+    else
+      exit 1
+    fi
+
     cp -p ${WORK_DIR}/${hotfix}.tgz ${HOME_DIR}/${hotfix}.tgz
     wait
     cd ${HOME_DIR}
@@ -106,7 +115,6 @@ function install_patch(){
     cd ${HOME_DIR}/${hotfix}
     ./patch_installer.pl
     wait
-    echo
   done
 
   # make after md5sum
@@ -117,7 +125,7 @@ function install_patch(){
 
   # diff md5sum
   diff ${BACKUP_MD5SUM} ${AFTER_MD5SUM}
-
+  mv ${AFTER_MD5SUM} ${AFTER_MD5SUM}_${HOSTNAME}
   menu
 }
 
